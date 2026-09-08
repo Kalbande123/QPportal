@@ -1,7 +1,4 @@
-// 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴
-// इथे तुमची Google Apps Script ची Web App URL टाका
-const GAS_WEB_APP_URL = 'AKfycbzDdh1PGX3mDTR72XJ7f_zgugECJRyTls4ac81p2b4NEjj1gskwTk5KCYLV9pi0O-A';
-// 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴
+const GAS_WEB_APP_URL = 'AKfycbzDdh1PGX3mDTR72XJ7f_zgugECJRyTls4ac81p2b4NEjj1gskwTk5KCYLV9pi0O-A'; // तुमची गुगल वेब ॲप URL इथे ठेवा
 
 let paperElements = [];
 let questionCounter = 1;
@@ -49,29 +46,50 @@ function renderPaper() {
     });
 }
 
-// खऱ्या AI कडून (Google Apps Script मधून) डेटा मागवणारे फंक्शन
-async function processAIGeneration() {
-    const rawText = document.getElementById('rawTextInput').value;
-    if(!rawText.trim()) return alert("कृपया मजकूर टाका!");
-    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') return alert("कृपया script.js मध्ये Web App URL टाका!");
+// 📂 PDF वाचून ती AI कडे पाठवणारे मुख्य फंक्शन
+async function processPDFAndAI() {
+    const fileInput = document.getElementById('pdfFileInput');
+    if (fileInput.files.length === 0) {
+        return alert("कृपया आधी कोणतीही एक PDF फाईल निवडा!");
+    }
 
+    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') {
+        return alert("कृपया script.js मध्ये तुमची Google Web App URL टाका!");
+    }
+
+    const file = fileInput.files[0];
     const btn = document.getElementById('generateBtn');
-    btn.innerHTML = "⏳ Generating...";
+    btn.innerHTML = "⏳ Reading PDF...";
     btn.disabled = true;
 
     try {
-        // CORS एरर टाळण्यासाठी आपण 'text/plain' वापरत आहोत
+        // 1. PDF फाईल वाचणे (pdf.js च्या मदतीने)
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let extractedText = "";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(" ");
+            extractedText += pageText + "\n";
+        }
+
+        if (!extractedText.trim()) {
+            throw new Error("PDF मधून मजकूर वाचता आला नाही. कदाचित PDF मध्ये स्कॅन केलेली इमेज असेल.");
+        }
+
+        btn.innerHTML = "🤖 AI Generating...";
+
+        // 2. वाचलेला मजकूर आपल्या Google Apps Script बॅकएंडकडे पाठवणे
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' }, 
-            body: JSON.stringify({ rawText: rawText })
+            body: JSON.stringify({ rawText: extractedText })
         });
 
         const result = await response.json();
-
-        if (result.error) {
-            throw new Error(result.error);
-        }
+        if (result.error) throw new Error(result.error);
 
         const newQuestions = JSON.parse(result.data);
 
@@ -86,13 +104,14 @@ async function processAIGeneration() {
         });
 
         renderPaper();
-        document.getElementById('rawTextInput').value = ''; 
-        
+        fileInput.value = ''; // file input clear करणे
+        alert("PDF मधील प्रश्न यशस्वीरित्या तयार झाले आहेत!");
+
     } catch (error) {
         console.error("Error details:", error);
         alert("तांत्रिक अडचण आली आहे:\n\n" + error.message);
     } finally {
-        btn.innerHTML = "✨ Generate with AI";
+        btn.innerHTML = "✨ Extract & Generate";
         btn.disabled = false;
     }
 }
