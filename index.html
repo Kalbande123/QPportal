@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SevaSpot - Question Paper Portal</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; height: 100vh; overflow: hidden; }
+
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 2px 0 5px rgba(0,0,0,0.05); overflow-y: auto; }
+        .sidebar h2 { font-size: 18px; color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 10px; }
+        
+        .btn-add { background: #6c757d; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { background: #5a6268; }
+        
+        .btn-export { background: #17a2b8; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s; margin-top: 5px; }
+        .btn-export:hover { background: #138496; }
+
+        .ai-box { display: flex; flex-direction: column; gap: 10px; background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #b8daff; }
+        .ai-box textarea { width: 100%; height: 120px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; resize: none; font-size: 13px; }
+        .btn-ai { background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 5px;}
+        .btn-ai:hover { background: #218838; }
+
+        .editor-container { flex: 1; padding: 30px; overflow-y: auto; display: flex; justify-content: center; background: #e9ecef; }
+        .a4-canvas { width: 210mm; min-height: 297mm; background: white; padding: 20mm; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 5px; }
+
+        .paper-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+        .paper-header input { width: 100%; text-align: center; border: 1px dashed transparent; padding: 5px; outline: none; background: transparent; }
+        .paper-header input:hover, .paper-header input:focus { border: 1px dashed #007bff; background: #f8f9fa; }
+        .school-name { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .exam-name { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        
+        .header-details { display: flex; justify-content: space-between; flex-wrap: wrap; text-align: left; font-size: 14px; font-weight: bold; }
+        .detail-item { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        .detail-item input { text-align: left; width: 100px; font-weight: bold; }
+
+        .question-block { display: flex; gap: 10px; margin-bottom: 15px; padding: 10px; border: 1px dashed #ccc; border-radius: 5px; background: #fff; position: relative; transition: 0.2s; }
+        .question-block:hover { border-color: #007bff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .q-number { font-weight: bold; min-width: 35px; margin-top: 5px; }
+        
+        .q-input-area { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .q-text { width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 4px; resize: vertical; min-height: 50px; font-size: 15px; font-family: inherit; }
+        .q-text:focus { outline: none; border-color: #007bff; }
+        
+        .q-marks-container { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+        .q-marks-input { width: 40px; padding: 2px 5px; text-align: center; border: 1px solid #ddd; border-radius: 3px; }
+
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; align-self: flex-start; margin-top: 5px; }
+        .btn-delete:hover { background: #c82333; }
+
+        @media print {
+            body { background-color: white; }
+            .sidebar { display: none !important; } 
+            .editor-container { padding: 0; background: white; display: block; overflow: visible; }
+            .a4-canvas { box-shadow: none; border: none; padding: 0; width: 100%; min-height: auto; margin: 0; }
+            .paper-header input { border: none !important; }
+            .question-block { border: none !important; padding: 5px 0; margin-bottom: 10px; }
+            .q-text { border: none !important; resize: none; overflow: hidden; padding: 0; }
+            .q-marks-input { border: none !important; }
+            .btn-delete { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>SevaSpot Portal</h2>
+        
+        <button class="btn-export" onclick="window.print()">🖨️ Print / Export PDF</button>
+        <button class="btn-add" onclick="addQuestion()">+ Add Manual Question</button>
+        
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+        
+        <div class="ai-box">
+            <h3 style="margin-top: 0; color: #0056b3;">✨ AI Auto Generate</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 5px;">प्रश्नपत्रिकेचा कच्चा मजकूर खाली पेस्ट करा:</p>
+            <textarea id="rawTextInput" placeholder="उदा. Q.1 भारताची राजधानी कोणती? [2 Marks]"></textarea>
+            <button class="btn-ai" id="generateBtn" onclick="processAIGeneration()">✨ Generate with AI</button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="a4-canvas" id="paper-canvas">
+            <div class="paper-header">
+                <input type="text" class="school-name" value="HIMALAYA COACHING CLASSES">
+                <input type="text" class="exam-name" value="First Term Examination - 2026">
+                <div class="header-details">
+                    <div class="detail-item">Class: <input type="text" value="10th"></div>
+                    <div class="detail-item">Subject: <input type="text" value="English"></div>
+                    <div class="detail-item">Marks: <input type="text" value="80"></div>
+                    <div class="detail-item">Time: <input type="text" value="3 Hrs"></div>
+                </div>
+            </div>
+            <div id="elements-container"></div>
+        </div>
+    </div>
+
+    <!-- इथे आपण script.js फाईल लिंक केली आहे -->
+    <script src="script.js"></script>
+</body>
+</html>
