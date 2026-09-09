@@ -1,5 +1,5 @@
 // 🔴 तुमची गुगल वेब ॲप URL खालील कोटमध्ये टाका 🔴
-const GAS_WEB_APP_URL = 'AKfycbzCGlfK-zrQz8l_U0AZ1iwRFTZvQH5whSfrzUzXjpdjI6szyov5Xmkrbmot8J_8-17j';
+const GAS_WEB_APP_URL = 'AKfycbzCGlfK-zrQz8l_U0AZ1iwRFTZvQH5whSfrzUzXjpdjI6szyov5Xmkrbmot8J_8-17j'/exec;
 
 let paperElements = [];
 let questionCounter = 1;
