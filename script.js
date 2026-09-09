@@ -1,4 +1,5 @@
-const GAS_WEB_APP_URL = 'AKfycbz4HRX2jQG24M1TVqf3ARTQ-WUqdJObkBSVy3CYjbb8xM6D4lUotC2h7LX2X0C4wK_U'; // तुमची नवी Web App URL इथे टाка
+// 🔴 तुमची गुगल वेब ॲप URL खालील कोटमध्ये टाका 🔴
+const GAS_WEB_APP_URL = 'AKfycbz4HRX2jQG24M1TVqf3ARTQ-WUqdJObkBSVy3CYjbb8xM6D4lUotC2h7LX2X0C4wK_U';
 
 let paperElements = [];
 let questionCounter = 1;
@@ -86,41 +87,33 @@ function renderPaper() {
     });
 }
 
-// स्कॅन केलेल्या PDF वरून थेट मजकूर काढणारे प्रगत फंक्शन
+// PDF वाचून AI कडे पाठवणारे अचूक फंक्शन
 async function processSmartPDF() {
     const fileInput = document.getElementById('pdfFileInput');
     const statusText = document.getElementById('statusText');
     const btn = document.getElementById('generateBtn');
 
     if (fileInput.files.length === 0) return alert("कृपया आधी PDF फाईल निवडा!");
-    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') return alert("script.js मध्ये Web App URL टाका!");
+    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') return alert("script.js मध्ये तुमची गुगल वेब ॲप URL टाका!");
 
     const file = fileInput.files[0];
     btn.disabled = true;
 
     try {
-        statusText.innerText = "⏳ Reading PDF Pages...";
+        statusText.innerText = "⏳ Reading PDF...";
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let extractedText = "";
 
-        // PDF च्या प्रत्येक पानाचे मजकूर किंवा अक्षर काढणे
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             let pageText = textContent.items.map(item => item.str).join(" ");
-            
-            // जर पानावर मजकूर नसेल (म्हणजे स्कॅन इमेज असेल), तर PDF.js द्वारे त्याचे अक्षर शोधून काढणे
-            if(!pageText.trim()) {
-                const viewport = page.getViewport({ scale: 1.5 });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                pageText = "[Scanned Page Content Image]";
-            }
             extractedText += `Page ${i}:\n` + pageText + "\n";
+        }
+
+        if (!extractedText.trim()) {
+            throw new Error("PDF मधून मजकूर वाचता आला नाही.");
         }
 
         statusText.innerText = "🤖 AI Processing...";
