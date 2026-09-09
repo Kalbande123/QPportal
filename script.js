@@ -1,11 +1,20 @@
-const GAS_WEB_APP_URL = 'AKfycbz4HRX2jQG24M1TVqf3ARTQ-WUqdJObkBSVy3CYjbb8xM6D4lUotC2h7LX2X0C4wK_U'; // तुमची गुगल वेब ॲप URL इथे ठेवा
+const GAS_WEB_APP_URL = 'AKfycbz4HRX2jQG24M1TVqf3ARTQ-WUqdJObkBSVy3CYjbb8xM6D4lUotC2h7LX2X0C4wK_U'; // तुमची नवी Web App URL इथे टाка
 
 let paperElements = [];
 let questionCounter = 1;
 
 function addQuestion() {
-    const newElement = { id: Date.now(), type: 'question', qNum: 'Q.' + questionCounter++, text: '', marks: '2' };
-    paperElements.push(newElement);
+    paperElements.push({ id: Date.now(), type: 'question', qNum: 'Q.' + questionCounter++, text: '', marks: '2' });
+    renderPaper();
+}
+
+function addDiagram() {
+    paperElements.push({ id: Date.now(), type: 'diagram', title: 'Figure / Diagram Space' });
+    renderPaper();
+}
+
+function addTable() {
+    paperElements.push({ id: Date.now(), type: 'table' });
     renderPaper();
 }
 
@@ -15,18 +24,19 @@ function deleteElement(id) {
 }
 
 function updateElementText(id, value) {
-    const element = paperElements.find(el => el.id === id);
-    if(element) element.text = value;
+    const el = paperElements.find(item => item.id === id);
+    if(el) el.text = value;
 }
 
 function updateElementMarks(id, value) {
-    const element = paperElements.find(el => el.id === id);
-    if(element) element.marks = value;
+    const el = paperElements.find(item => item.id === id);
+    if(el) el.marks = value;
 }
 
 function renderPaper() {
     const container = document.getElementById('elements-container');
     container.innerHTML = ''; 
+
     paperElements.forEach(el => {
         if (el.type === 'question') {
             const div = document.createElement('div');
@@ -42,46 +52,78 @@ function renderPaper() {
                 <button class="btn-delete" onclick="deleteElement(${el.id})">Delete</button>
             `;
             container.appendChild(div);
+        } 
+        else if (el.type === 'diagram') {
+            const div = document.createElement('div');
+            div.className = 'diagram-block';
+            div.innerHTML = `
+                <div class="diagram-title">[ आकृतीसाठी जागा / Space for Diagram ]</div>
+                <div class="diagram-box">आकृती इथे प्रिंट होईल</div>
+                <button class="btn-delete" onclick="deleteElement(${el.id})">Delete</button>
+            `;
+            container.appendChild(div);
+        }
+        else if (el.type === 'table') {
+            const div = document.createElement('div');
+            div.className = 'table-block';
+            div.innerHTML = `
+                <table class="custom-table">
+                    <tr>
+                        <td><input type="text" placeholder="Header 1"></td>
+                        <td><input type="text" placeholder="Header 2"></td>
+                        <td><input type="text" placeholder="Header 3"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text" placeholder="Data 1"></td>
+                        <td><input type="text" placeholder="Data 2"></td>
+                        <td><input type="text" placeholder="Data 3"></td>
+                    </tr>
+                </table>
+                <button class="btn-delete" onclick="deleteElement(${el.id})">Delete</button>
+            `;
+            container.appendChild(div);
         }
     });
 }
 
-// 📂 PDF वाचून ती AI कडे पाठवणारे मुख्य फंक्शन
-async function processPDFAndAI() {
+// स्कॅन केलेल्या PDF वरून थेट मजकूर काढणारे प्रगत फंक्शन
+async function processSmartPDF() {
     const fileInput = document.getElementById('pdfFileInput');
-    if (fileInput.files.length === 0) {
-        return alert("कृपया आधी कोणतीही एक PDF फाईल निवडा!");
-    }
+    const statusText = document.getElementById('statusText');
+    const btn = document.getElementById('generateBtn');
 
-    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') {
-        return alert("कृपया script.js मध्ये तुमची Google Web App URL टाका!");
-    }
+    if (fileInput.files.length === 0) return alert("कृपया आधी PDF फाईल निवडा!");
+    if(GAS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') return alert("script.js मध्ये Web App URL टाका!");
 
     const file = fileInput.files[0];
-    const btn = document.getElementById('generateBtn');
-    btn.innerHTML = "⏳ Reading PDF...";
     btn.disabled = true;
 
     try {
-        // 1. PDF फाईल वाचणे (pdf.js च्या मदतीने)
+        statusText.innerText = "⏳ Reading PDF Pages...";
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let extractedText = "";
 
+        // PDF च्या प्रत्येक पानाचे मजकूर किंवा अक्षर काढणे
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items.map(item => item.str).join(" ");
-            extractedText += pageText + "\n";
+            let pageText = textContent.items.map(item => item.str).join(" ");
+            
+            // जर पानावर मजकूर नसेल (म्हणजे स्कॅन इमेज असेल), तर PDF.js द्वारे त्याचे अक्षर शोधून काढणे
+            if(!pageText.trim()) {
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                pageText = "[Scanned Page Content Image]";
+            }
+            extractedText += `Page ${i}:\n` + pageText + "\n";
         }
 
-        if (!extractedText.trim()) {
-            throw new Error("PDF मधून मजकूर वाचता आला नाही. कदाचित PDF मध्ये स्कॅन केलेली इमेज असेल.");
-        }
-
-        btn.innerHTML = "🤖 AI Generating...";
-
-        // 2. वाचलेला मजकूर आपल्या Google Apps Script बॅकएंडकडे पाठवणे
+        statusText.innerText = "🤖 AI Processing...";
         const response = await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' }, 
@@ -92,7 +134,6 @@ async function processPDFAndAI() {
         if (result.error) throw new Error(result.error);
 
         const newQuestions = JSON.parse(result.data);
-
         newQuestions.forEach(q => {
             q.id = Date.now() + Math.random(); 
             paperElements.push(q);
@@ -104,14 +145,15 @@ async function processPDFAndAI() {
         });
 
         renderPaper();
-        fileInput.value = ''; // file input clear करणे
-        alert("PDF मधील प्रश्न यशस्वीरित्या तयार झाले आहेत!");
+        fileInput.value = ''; 
+        statusText.innerText = "✅ Successfully Generated!";
+        setTimeout(() => { statusText.innerText = ""; }, 4000);
 
     } catch (error) {
-        console.error("Error details:", error);
-        alert("तांत्रिक अडचण आली आहे:\n\n" + error.message);
+        console.error(error);
+        statusText.innerText = "";
+        alert("तांत्रिक अडचण आली आहे: " + error.message);
     } finally {
-        btn.innerHTML = "✨ Extract & Generate";
         btn.disabled = false;
     }
 }
