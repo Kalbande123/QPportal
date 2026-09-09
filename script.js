@@ -1,4 +1,4 @@
-const GAS_WEB_APP_URL = 'AKfycbzDdh1PGX3mDTR72XJ7f_zgugECJRyTls4ac81p2b4NEjj1gskwTk5KCYLV9pi0O-A'; // तुमची गुगल वेब ॲप URL इथे ठेवा
+const GAS_WEB_APP_URL = 'AKfycbz4HRX2jQG24M1TVqf3ARTQ-WUqdJObkBSVy3CYjbb8xM6D4lUotC2h7LX2X0C4wK_U'; // तुमची गुगल वेब ॲप URL इथे ठेवा
 
 let paperElements = [];
 let questionCounter = 1;
